@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target === successPopup) hideSuccessPopup();
     });
 
-    if (orderForm) {
+        if (orderForm) {
         orderForm.addEventListener('submit', (e) => {
             e.preventDefault(); // Prevent page reload
             // In a real app, send data to server here
@@ -247,7 +247,104 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Initial route handling
+    // --- Authentication Logic ---
+    const authOverlay = document.getElementById('authOverlay');
+    const tabLogin = document.getElementById('tabLogin');
+    const tabSignup = document.getElementById('tabSignup');
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    
+    // Auth Toggling
+    if (tabLogin && tabSignup) {
+        tabLogin.addEventListener('click', () => {
+            tabLogin.classList.add('active');
+            tabSignup.classList.remove('active');
+            loginForm.style.display = 'block';
+            signupForm.style.display = 'none';
+        });
+
+        tabSignup.addEventListener('click', () => {
+            tabSignup.classList.add('active');
+            tabLogin.classList.remove('active');
+            signupForm.style.display = 'block';
+            loginForm.style.display = 'none';
+        });
+    }
+
+    // Check Login State on Load
+    function checkAuth() {
+        const currentUser = localStorage.getItem('agriflow_currentUser');
+        if (!currentUser && authOverlay) {
+            // Not logged in, block the site
+            authOverlay.classList.add('active');
+            // Disable scroll on body
+            document.body.style.overflow = 'hidden';
+        } else {
+            // Logged in
+            if (authOverlay) authOverlay.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            // You could optionally display the username in the header here
+        }
+    }
+
+    // Handle Signup
+    if (signupForm) {
+        signupForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('signupUsername').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const mobile = document.getElementById('signupMobile').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            const errorElement = document.getElementById('signupError');
+
+            // Basic validation
+            let users = JSON.parse(localStorage.getItem('agriflow_users')) || {};
+            if (users[username]) {
+                errorElement.textContent = "Username already exists. Please choose another or login.";
+                return;
+            }
+
+            // Save user
+            users[username] = {
+                password: password,
+                email: email,
+                mobile: mobile
+            };
+            localStorage.setItem('agriflow_users', JSON.stringify(users));
+            
+            // Auto login
+            localStorage.setItem('agriflow_currentUser', username);
+            signupForm.reset();
+            errorElement.textContent = "";
+            checkAuth(); // This will hide the overlay
+        });
+    }
+
+    // Handle Login
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const errorElement = document.getElementById('loginError');
+
+            let users = JSON.parse(localStorage.getItem('agriflow_users')) || {};
+            
+            if (users[username] && users[username].password === password) {
+                // Success
+                localStorage.setItem('agriflow_currentUser', username);
+                loginForm.reset();
+                errorElement.textContent = "";
+                checkAuth(); // Hide overlay
+            } else {
+                errorElement.textContent = "Invalid username or password.";
+            }
+        });
+    }
+
+    // Initial checks and route handling
+    checkAuth();
     handleRouting();
 
 });
+
